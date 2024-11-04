@@ -4,6 +4,9 @@ const models = require('../models');
 // get the Cat model
 const { Cat } = models;
 
+// get the Dog model
+const { Dog } = models;
+
 // Function to handle rendering the index page.
 const hostIndex = async (req, res) => {
   //Start with the name as unknown
@@ -100,6 +103,18 @@ const hostPage3 = (req, res) => {
   res.render('page3');
 };
 
+//function to render page4
+const hostPage4 = async (req, res) => {
+  try {
+    const docs = await Dog.find({}).lean().exec();
+
+    return res.render('page4', { dogs: docs });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ error: 'failed to find dogs' });
+  }
+};
+
 // Get name will return the name of the last added cat.
 const getName = async (req, res) => {
   try{
@@ -182,6 +197,33 @@ const setName = async (req, res) => {
     */
     console.log(err);
     return res.status(500).json({ error: 'failed to create cat' });
+  }
+};
+
+const setDogName = async (req, res) => {
+  if (!req.body.name || !req.body.breed || !req.body.age) {
+    // If they are missing data, send back an error.
+    return res.status(400).json({ error: 'name, breed and age are all required' });
+  }
+
+  const dogData = {
+    name: `${req.body.name}`,
+    breed: req.body.breed,
+    age: req.body.age,
+  };
+
+  const newDog = new Dog(dogData);
+
+  try {
+    await newDog.save();
+    return res.status(201).json({
+      name: newDog.name,
+      breed: newDog.breed,
+      age: newDog.age,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ error: 'failed to create dog' });
   }
 };
 
@@ -289,7 +331,9 @@ module.exports = {
   page1: hostPage1,
   page2: hostPage2,
   page3: hostPage3,
+  page4: hostPage4,
   getName,
+  setDogName,
   setName,
   updateLast,
   searchName,
