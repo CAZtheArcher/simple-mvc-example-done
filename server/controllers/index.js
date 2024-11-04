@@ -274,6 +274,47 @@ const searchName = async (req, res) => {
   return res.json({ name: doc.name, beds: doc.bedsOwned });
 };
 
+// Function to handle searching a cat by name.
+const searchDogName = async (req, res) => {
+  if (!req.query.name) {
+    return res.status(400).json({ error: 'Name is required to perform a search' });
+  }
+
+  let doc;
+  try {
+    doc = await Dog.findOne({ name: req.query.name }).exec();
+  } catch (err) {
+    // If there is an error, log it and send the user an error message.
+    console.log(err);
+    return res.status(500).json({ error: 'Something went wrong' });
+  }
+
+  // If we do not find something that matches our search, doc will be empty.
+  if (!doc) {
+    return res.status(404).json({ error: 'No dogs found' });
+  }
+  
+  const updatePromise = Dog.findOneAndUpdate({ name: req.query.name }, {$inc: {'age': 1}}, {
+    returnDocument: 'after', //Populates doc in the .then() with the version after update
+    sort: {'createdDate': 'descending'}
+  }).lean().exec();
+
+  // If we successfully save/update them in the database, send back the dog's info.
+  updatePromise.then((doc) => res.json({
+    name: doc.name,
+    beds: doc.bedsOwned,
+  }));
+
+  // If something goes wrong saving to the database, log the error and send a message to the client.
+  updatePromise.catch((err) => {
+    console.log(err);
+    return res.status(500).json({ error: 'Something went wrong' });
+  });
+
+  // Otherwise, we got a result and will send it back to the user.
+  return res.json({ name: doc.name, breed: doc.breed, age: doc.age });
+};
+
 /* A function for updating the last cat added to the database.
    Usually database updates would be a more involved process, involving finding
    the right element in the database based on query, modifying it, and updating
@@ -337,5 +378,6 @@ module.exports = {
   setName,
   updateLast,
   searchName,
+  searchDogName,
   notFound,
 };
